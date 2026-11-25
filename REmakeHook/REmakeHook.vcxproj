@@ -58,6 +58,7 @@
     <ClCompile Include="src\Settings.cpp" />
     <ClCompile Include="src\Tools\CheatTool.cpp" />
     <ClCompile Include="src\Tools\InventoryTool.cpp" />
+    <ClCompile Include="src\Tools\RandomizerTool.cpp" />
     <ClCompile Include="src\Tools\OptionsTool.cpp" />
     <ClCompile Include="src\Tools\RoomJumpTool.cpp" />
     <ClCompile Include="src\Tools\SaveTool.cpp" />
@@ -90,6 +91,8 @@
     <ClInclude Include="src\Settings.h" />
     <ClInclude Include="src\Tools\CheatTool.h" />
     <ClInclude Include="src\Tools\InventoryTool.h" />
+    <ClInclude Include="src\Tools\RandomizerTool.h" />
+    <ClInclude Include="src\Tools\VanillaItemTable.h" />
     <ClInclude Include="src\Tools\OptionsTool.h" />
     <ClInclude Include="src\Tools\RoomJumpTool.h" />
     <ClInclude Include="src\Tools\SaveTool.h" />
@@ -185,7 +188,7 @@
       <AdditionalDependencies>d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) "E:\Jeux\Steam\steamapps\common\Resident Evil Biohazard HD REMASTER"</Command>
+      <Command>echo Built $(TargetPath)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -210,7 +213,7 @@
       <AdditionalDependencies>d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) "E:\Jeux\Steam\steamapps\common\Resident Evil Biohazard HD REMASTER"</Command>
+      <Command>echo Built $(TargetPath)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

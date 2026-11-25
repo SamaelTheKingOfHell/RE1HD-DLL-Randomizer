@@ -59,6 +59,9 @@ void InitGameAddresses(GameVersion gameVersion)
 			GameAddresses[GAID_CHEAT_INFINITE_HEALTH] = 0x0050f4c2;
 
 			GameAddresses[GAID_INVENTORY] = 0x00d7c9c0;
+			GameAddresses[GAID_SPAWN_ROOM_ITEM_MAIN] = 0;
+			GameAddresses[GAID_SPAWN_ROOM_ITEM_ALT] = 0;
+			GameAddresses[GAID_SPAWN_UITEM_MODEL] = 0;
 		} break;
 		case GameVersion::V_6699874012183562949:
 		case GameVersion::V_6699874012183562949_Steamless:
@@ -94,6 +97,9 @@ void InitGameAddresses(GameVersion gameVersion)
 			GameAddresses[GAID_CHEAT_INFINITE_HEALTH] = 0x00572242;
 
 			GameAddresses[GAID_INVENTORY] = 0x00cf2f28;
+			GameAddresses[GAID_SPAWN_ROOM_ITEM_MAIN] = 0x004819e0;
+			GameAddresses[GAID_SPAWN_ROOM_ITEM_ALT] = 0x00481830;
+			GameAddresses[GAID_SPAWN_UITEM_MODEL] = 0x004e77f0;
 		} break;
 		default:
 			assert(false);

@@ -1,0 +1,69 @@
+[size=5][b]RE1HD DLL Randomizer (dinput8.dll) — BhdTool Fork[/b][/size]
+
+An open-source runtime [b]dinput8.dll[/b] Randomizer and utility overlay for [b]Resident Evil HD Remaster[/b] (Steam), built as a fork of [url=https://github.com/eleval/BhdTool]eleval/BhdTool[/url].
+
+Instead of unpacking/repacking game archives or relying on an external trainer whose pointers break across Steam builds, this mod injects via [b]dinput8.dll[/b] and hooks item spawning and room triggers directly inside decrypted game memory—with no external trainer window required.
+
+[line]
+
+[size=4][b]Key Features[/b][/size]
+[list]
+[*][b]Runtime Item Randomizer (153 Vanilla Pickups):[/b] Hooks game item-spawn functions in memory across 153 mapped pickup flags with three modes:
+  [list]
+  [*][i]Off (Log Only)[/i] — Vanilla items with live spawn logging.
+  [*][i]Safe Shuffle (Keep Key Items)[/i] — Keeps progression/key items playable while shuffling pickups.
+  [*][i]Full Shuffle (All Items)[/i] — Shuffles the entire mapped pickup pool.
+  [/list]
+[*][b]No Missing-Model Crashes (i004p.mod Fix):[/b] Preserves the room's vanilla pre-loaded floor 3D mesh while swapping the randomized item ID, quantity, and pickup reward. Items without dedicated floor [i].mod[/i] files (Sword Key, Serum, Wooden Mount, etc.) will never cause a [i]Failed open file[/i] fatal error.
+[*][b]Bidirectional Door Randomizer:[/b] Pairs reciprocal doors from [b]rooms.json[/b] into a connected 1-to-1 bidirectional door graph (1-door leaf rooms pair with multi-door hubs so you don't softlock on dead-end loops).
+[*][b]Character & Difficulty Pool Filtering:[/b]
+  [list]
+  [*][i]Play As:[/i] Auto-Detect, Chris, or Jill (automatically excludes Small Keys for Jill).
+  [*][i]Difficulty:[/i] Auto-Detect, Normal, or Hard.
+  [/list]
+[*][b]Benn Powell-Style Pool Removal & Modifiers:[/b]
+  [list]
+  [*]Remove [b]Healing Items[/b], [b]Ink Ribbons[/b], and/or [b]Defence Items[/b] (replaced with Junk: Wooden Mount, Slide Filter, X-Ray 1, X-Ray 2).
+  [*][b]Swap all non-key items with Self-Defense Gun[/b].
+  [*][b]Fuel Supply Capsule armed on pickup[/b] (explosive volatile state on pickup).
+  [/list]
+[*][b]Seeds, Spoiler Export & Content Map:[/b] Enter a custom seed or generate a new one, export [b]RandomizerSpoiler.txt[/b], view [b]Recent Room Spawns[/b], and search the full 153-pickup Content Map live in-game.
+[*][b]Includes Classic BhdTool Utilities:[/b] Door Skip toggle, Room Jump tool, Inventory Editor, Save Anywhere, and Cheats.
+[/list]
+
+[line]
+
+[size=4][b]Compatibility & Requirements[/b][/size]
+[list]
+[*][b]Game Version:[/b] Resident Evil HD Remaster — Steam (September 2026 build / [i]V_6699874012183562949[/i], [b]bhd.exe[/b] SHA-256 [code]39b840663e4b1a6835c60cbd176e4ee6c21b9197fc2c2dd733f2a7c36a0b429a[/code]) is required for the Randomizer hooks. Older supported builds retain standard BhdTool utilities.
+[*][b]Required Files:[/b] Both [b]dinput8.dll[/b] and [b]rooms.json[/b] must sit in the game's root folder next to [b]bhd.exe[/b].
+[/list]
+
+[line]
+
+[size=4][b]Installation[/b][/size]
+[list=1]
+[*]Download the archive and extract [b]dinput8.dll[/b] and [b]rooms.json[/b] into your [i]Resident Evil Biohazard HD REMASTER[/i] folder (the same directory containing [b]bhd.exe[/b]).
+[*]Launch the game via Steam.
+[*]Press [b]F5[/b] while in-game to open the overlay menu.
+[*]Open the [b]Randomizer (dinput8.dll)[/b] section, pick your mode, filters, modifiers, and seed, then start a new game (or change rooms).
+[/list]
+To temporarily disable the mod without deleting files, close the game once to generate [b]bhdtool.ini[/b] and set [code]EnableBhdTool=0[/code].
+
+[line]
+
+[size=4][b]Known Limitations[/b][/size]
+[list]
+[*][b]Enemies & Locks are currently unhooked[/b] (item pickups and doors are randomized; enemies and door locks remain vanilla).
+[*]Randomized floor pickups intentionally display the vanilla floor/pedestal 3D model so items without ground models never crash the engine; picking them up grants the randomized item and shows the randomized icon/name.
+[/list]
+
+[line]
+
+[size=4][b]Source Code, License & Credits[/b][/size]
+[list]
+[*][b]Open-Source GitHub Repository:[/b] [url=https://github.com/SamaelTheKingOfHell/RE1HD-DLL-Randomizer]https://github.com/SamaelTheKingOfHell/RE1HD-DLL-Randomizer[/url] (GNU GPL v3.0)
+[*][b]Upstream Project:[/b] [url=https://github.com/eleval/BhdTool]eleval/BhdTool[/url] by [b]Eleval[/b] ([url=https://ko-fi.com/eleval777]Ko-Fi[/url])
+[*][b]Option Inspiration:[/b] Randomizer filter & modifier suite inspired by [b]Benn Powell[/b]'s RE1 HD Randomizer options.
+[*][b]Libraries:[/b] Dear ImGui, json11, picosha2.
+[/list]

@@ -10,7 +10,10 @@
 #include "imgui/imgui.h"
 
 #include <algorithm>
+#include <map>
+#include <random>
 #include <string>
+#include <unordered_map>
 
 namespace
 {
@@ -33,6 +36,14 @@ namespace
 		std::vector<RoomJumpPoint> jumpPoints;
 	};
 
+	struct DoorPortal
+	{
+		uint32_t roomNb;      // Room you land inside
+		uint32_t fromRoomNb;  // Room you came from
+		float x, y, z, angle;
+		uint32_t cut, page;
+	};
+
 	std::vector<Room> rooms_;
 	int selectedRoom_ = 0;
 	int selectedJumpPoint_ = 0;
@@ -44,9 +55,125 @@ namespace
 	uint32_t jumpPage_ = 0;
 	bool jumpRoom_ = false;
 
+	bool doorRandoEnabled_ = false;
+	int doorRandoSeed_ = 1337;
+	std::vector<DoorPortal> doorPortals_;
+	std::unordered_map<uint64_t, DoorPortal> doorRedirectMap_; // key: ((uint64_t)vanillaDst << 32) | vanillaSrc -> newTarget
+
 	using bhd_CheckForTriggers =  int(__thiscall*)(void*, int, uint32_t*, TargetRoomData*);
 	bhd_CheckForTriggers checkForTriggers_ = nullptr;
 	TrampHook checkForTriggersHook_;
+
+	uint32_t ReadCurrentRoomNb()
+	{
+		if (!IsSeptember2026Build())
+			return 0;
+		uintptr_t savePtr = 0;
+		SIZE_T br = 0;
+		if (!ReadProcessMemory(GetCurrentProcess(), (void*)GameAddresses[GAID_INVENTORY], &savePtr, sizeof(savePtr), &br) || savePtr == 0)
+			return 0;
+		uint32_t stage = 0, room = 0;
+		ReadProcessMemory(GetCurrentProcess(), (void*)(savePtr + 0xe4750), &stage, sizeof(stage), &br);
+		ReadProcessMemory(GetCurrentProcess(), (void*)(savePtr + 0xe4754), &room, sizeof(room), &br);
+		return (stage << 8) | room;
+	}
+
+	void BuildDoorPortalList()
+	{
+		doorPortals_.clear();
+		std::map<std::pair<uint32_t, uint32_t>, int> edgeCounts;
+		for (const auto& r : rooms_)
+		{
+			for (const auto& jp : r.jumpPoints)
+			{
+				if (r.roomNb != jp.targetRoomNb)
+					edgeCounts[{ r.roomNb, jp.targetRoomNb }]++;
+			}
+		}
+
+		for (const auto& r : rooms_)
+		{
+			for (const auto& jp : r.jumpPoints)
+			{
+				if (r.roomNb == jp.targetRoomNb)
+					continue;
+				// Only include unambiguous 1-to-1 reciprocal edges
+				if (edgeCounts[{ r.roomNb, jp.targetRoomNb }] == 1 && edgeCounts[{ jp.targetRoomNb, r.roomNb }] == 1)
+				{
+					doorPortals_.push_back({ r.roomNb, jp.targetRoomNb, jp.x, jp.y, jp.z, jp.angle, jp.cut, jp.page });
+				}
+			}
+		}
+	}
+
+	void RebuildDoorRandomizer()
+	{
+		doorRedirectMap_.clear();
+		if (!doorRandoEnabled_ || doorPortals_.size() < 2)
+			return;
+
+		// Build index lookup: (roomNb, fromRoomNb) -> index in doorPortals_
+		std::unordered_map<uint64_t, size_t> portalIdx;
+		for (size_t i = 0; i < doorPortals_.size(); ++i)
+		{
+			uint64_t k = ((uint64_t)doorPortals_[i].roomNb << 32) | doorPortals_[i].fromRoomNb;
+			portalIdx[k] = i;
+		}
+
+		// Separate leaf portals (1-door rooms) from hub portals (multi-door rooms)
+		// so two 1-door rooms never form an isolated 2-room island.
+		std::unordered_map<uint32_t, int> roomPortalCount;
+		for (const auto& dp : doorPortals_)
+			roomPortalCount[dp.roomNb]++;
+
+		std::vector<size_t> leaves, hubs;
+		for (size_t i = 0; i < doorPortals_.size(); ++i)
+		{
+			if (roomPortalCount[doorPortals_[i].roomNb] <= 1)
+				leaves.push_back(i);
+			else
+				hubs.push_back(i);
+		}
+
+		std::mt19937 rng(static_cast<uint32_t>(doorRandoSeed_));
+		std::shuffle(leaves.begin(), leaves.end(), rng);
+		std::shuffle(hubs.begin(), hubs.end(), rng);
+
+		std::vector<size_t> partner(doorPortals_.size());
+		for (size_t i = 0; i < partner.size(); ++i)
+			partner[i] = i;
+
+		size_t pairCount = (std::min)(leaves.size(), hubs.size());
+		for (size_t i = 0; i < pairCount; ++i)
+		{
+			partner[leaves[i]] = hubs[i];
+			partner[hubs[i]] = leaves[i];
+		}
+
+		std::vector<size_t> remaining;
+		for (size_t i = pairCount; i < hubs.size(); ++i)
+			remaining.push_back(hubs[i]);
+		for (size_t i = pairCount; i < leaves.size(); ++i)
+			remaining.push_back(leaves[i]);
+
+		for (size_t i = 0; i + 1 < remaining.size(); i += 2)
+		{
+			partner[remaining[i]] = remaining[i + 1];
+			partner[remaining[i + 1]] = remaining[i];
+		}
+
+		// When walking out of u (vanilla target is v = origPartner[u]), redirect to partner[u]
+		for (size_t u = 0; u < doorPortals_.size(); ++u)
+		{
+			uint64_t vKey = ((uint64_t)doorPortals_[u].fromRoomNb << 32) | doorPortals_[u].roomNb;
+			auto itV = portalIdx.find(vKey);
+			if (itV != portalIdx.end())
+			{
+				// vKey is (dst=fromRoomNb, src=roomNb)
+				doorRedirectMap_[vKey] = doorPortals_[partner[u]];
+			}
+		}
+	}
 }
 
 namespace
@@ -89,7 +216,27 @@ int __fastcall hk_bhd_CheckForTriggers(void* obj, void* edx, int param_1, uint32
 	}
 	else
 	{
-		return checkForTriggers_(obj, param_1, param_2, target);
+		uint32_t srcRoomNb = ReadCurrentRoomNb();
+		int ret = checkForTriggers_(obj, param_1, param_2, target);
+		if (ret == 4 && doorRandoEnabled_ && target != nullptr && srcRoomNb != 0)
+		{
+			uint32_t dstRoomNb = (target->stage << 8) | target->room;
+			uint64_t key = ((uint64_t)dstRoomNb << 32) | srcRoomNb;
+			auto it = doorRedirectMap_.find(key);
+			if (it != doorRedirectMap_.end())
+			{
+				const DoorPortal& dest = it->second;
+				target->stage = dest.roomNb / 0x100;
+				target->room = dest.roomNb % 0x100;
+				target->cut = dest.cut;
+				target->x = dest.x;
+				target->y = dest.y;
+				target->z = dest.z;
+				target->page = dest.page;
+				target->angle = (dest.angle / 180.0f) * PI;
+			}
+		}
+		return ret;
 	}
 }
 
@@ -173,6 +320,9 @@ void RoomJumpTool::Init()
 		}
 	}
 
+	BuildDoorPortalList();
+	RebuildDoorRandomizer();
+
 	/*FunctionHook hook3;
 	hook3.Set(0x0041e06a, &hk_bhd_FetchDoorRoomData);
 	hook3.Apply();*/
@@ -255,4 +405,28 @@ void RoomJumpTool::UpdateUI()
 		}
 		ImGui::Unindent();
 	}
+}
+
+std::string RoomJumpTool::GetRoomName(uint32_t roomNb)
+{
+	for (const auto& r : rooms_)
+	{
+		if (r.roomNb == roomNb)
+			return r.name;
+	}
+	char buf[32];
+	sprintf_s(buf, "Room 0x%X", roomNb);
+	return std::string(buf);
+}
+
+void RoomJumpTool::SetDoorRandomizer(bool enabled, int seed)
+{
+	doorRandoEnabled_ = enabled;
+	doorRandoSeed_ = seed;
+	RebuildDoorRandomizer();
+}
+
+int RoomJumpTool::GetDoorRandomizerCount()
+{
+	return static_cast<int>(doorRedirectMap_.size());
 }

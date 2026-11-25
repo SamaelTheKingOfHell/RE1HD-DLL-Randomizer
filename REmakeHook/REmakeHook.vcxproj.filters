@@ -102,6 +102,9 @@
     <ClCompile Include="src\Tools\CheatTool.cpp">
       <Filter>src\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="src\Tools\RandomizerTool.cpp">
+      <Filter>src\Tools</Filter>
+    </ClCompile>
     <ClCompile Include="src\Game\GameAddress.cpp">
       <Filter>src\Game</Filter>
     </ClCompile>
@@ -192,6 +195,12 @@
       <Filter>src\Game</Filter>
     </ClInclude>
     <ClInclude Include="src\Tools\CheatTool.h">
+      <Filter>src\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Tools\RandomizerTool.h">
+      <Filter>src\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Tools\VanillaItemTable.h">
       <Filter>src\Tools</Filter>
     </ClInclude>
     <ClInclude Include="src\Game\GameAddress.h">

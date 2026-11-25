@@ -5,6 +5,7 @@
 #include "Tools/CheatTool.h"
 #include "Tools/OptionsTool.h"
 #include "Tools/InventoryTool.h"
+#include "Tools/RandomizerTool.h"
 #include "Tools/RoomJumpTool.h"
 #include "Tools/SaveTool.h"
 
@@ -22,12 +23,13 @@ namespace
 
 void BhdTool::Init()
 {
-	headerText_ = std::string("BHD Tool v") + std::string(BuildVersion) + " by Eleval (https://github.com/eleval/)";
+	headerText_ = std::string("BHD Tool v") + std::string(BuildVersion) + " by Eleval (https://github.com/eleval/) | + Randomizer Fork";
 
 	OptionsTool::Init();
 	RoomJumpTool::Init();
 	SaveTool::Init();
 	CheatTool::Init();
+	RandomizerTool::Init();
 }
 
 void BhdTool::Update()
@@ -44,6 +46,7 @@ void BhdTool::Update()
 				InventoryTool::UpdateUI();
 				SaveTool::UpdateUI();
 				CheatTool::UpdateUI();
+				RandomizerTool::UpdateUI();
 			}
 			ImGui::End();
 		}

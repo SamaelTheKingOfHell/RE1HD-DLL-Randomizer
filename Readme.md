@@ -1,42 +1,72 @@
-# BhdTool
-This is a tool I made for fun while learning some Reverse Engineering stuff
+# RE1HD DLL Randomizer (BhdTool Fork)
 
-The goal of this tool is to offer utilities within the Resident Evil HD REmaster game, mainly aimed at helping speedrunning practises.
+An open-source, runtime `dinput8.dll` Randomizer and practice/utility overlay for **Resident Evil HD Remaster** (Steam), forked from [eleval/BhdTool](https://github.com/eleval/BhdTool).
 
-## Features
-- Ability to toggle Door Skip on & off at runtime.
-- Tool to jump to any room in the game
-- Inventory editor
-- Save anywhere tool
-- Various cheats
+Instead of patching `.arc` archives on disk or writing memory from an external trainer (which breaks against Steam DRM / decrypted `.text` sections or crashes when items lack floor `.mod` meshes), this fork hooks item spawning and room triggers directly inside game memory via `dinput8.dll`.
 
-## How to build
-This project was made using Visual Studio 2019 Community.
+## Randomizer Features
+Supported game build for randomizer hooks: **Steam September 2026 build (`V_6699874012183562949`, `bhd.exe` SHA-256 `39b840663e4b1a6835c60cbd176e4ee6c21b9197fc2c2dd733f2a7c36a0b429a`)**. Legacy builds supported by upstream `BhdTool` retain the standard trainer/utility features.
 
-So any version of Visual Studio 2019 or newer should be more than enough to build the project. You will need to edit the Post-Build step though as it copies the dll to a hardset path.
+- **Item Randomizer (153 Vanilla Pickups)**
+  - Hooks room item spawning (`0x004819e0`, `0x00481830`) and pickup model instantiation (`0x004e77f0`) using a curated 153-entry pickup table (`REmakeHook/src/Tools/VanillaItemTable.h`).
+  - Modes: **Off (Log Only)**, **Safe Shuffle (Keep Key Items)**, and **Full Shuffle (All Items)**.
+  - **Safe 3D Floor Visual Handling**: Keeps the room's already-mounted vanilla `uItem` `.mod` mesh on the floor while replacing the pickup ID, quantity, and granted reward—eliminating `Failed open file ... i004p.mod` fatal crashes for items without standalone floor models (such as Sword Key, Serum, or Wooden Mount).
+- **Bidirectional Door Randomizer**
+  - `Randomize Doors (Bidirectional)` hooks `GAID_CHECK_FOR_TRIGGERS` and pairs reciprocal portals parsed from `rooms.json` into a connected 1-to-1 bidirectional involution (pairing single-door leaf rooms with multi-door hubs).
+- **Character & Difficulty Awareness**
+  - **Play As**: `Auto-Detect`, `Chris`, or `Jill` (automatically excludes `SmallKey` from Jill's item pool).
+  - **Difficulty**: `Auto-Detect`, `Normal`, or `Hard`.
+- **Pool Filtering & Modifiers**
+  - **Remove from pool (replaces removed pickups with Junk: Wooden Mount, Slide Filter, X-Ray 1, X-Ray 2)**:
+    - `Healing Items`
+    - `Ink Ribbons`
+    - `Defence Items`
+  - **Swap all non-key items with Self-Defense Gun**
+  - **Fuel Supply Capsule armed on pickup** (`111 -> 31`)
+- **Seeds, Spoiler Log & Content Map**
+  - Deterministic **Seed** input + **New Seed** generator.
+  - **Export Spoiler** (`RandomizerSpoiler.txt`).
+  - Live **Recent Room Spawns** log (resolved with room names from `rooms.json`) and searchable **Content Map (All 153 Pickups)**.
 
-There are two external dependencies to imgui & json11 but their files are included within the project, so you just need to clone this repository (with --recursive) and it should be just fine.
+## Upstream BhdTool Features (Preserved)
+- Runtime **Door Skip** toggle
+- **Room Jump** tool (using `rooms.json`)
+- **Inventory** editor
+- **Save Anywhere** tool
+- **Cheats** menu
 
-## How to run
-Simply paste the built dinput8.dll from any of the releases (or your own build) where the game's executable is and run the game.
+## Known Limitations
+- **Enemies & Locks are not randomized** (currently unhooked).
+- Randomizer hooks activate only on the Steam September 2026 build (`V_6699874012183562949`).
+- Randomized floor pickups reuse the vanilla pedestal/floor 3D mesh for stability; the prompt, inventory icon, and received item reflect the randomized item.
 
-To bring up the tool's UI, simply press F5 while ingame.
+## How to Run
+1. Download the latest release zip (or build `dinput8.dll` yourself).
+2. Copy `dinput8.dll` and `rooms.json` into your *Resident Evil HD Remaster* installation folder next to `bhd.exe`.
+3. Launch the game normally through Steam.
+4. Press **`F5`** in-game to open the overlay, expand **`Randomizer (dinput8.dll)`**, configure your options/seed, and start or reload a run.
 
-You will also need a "rooms.json" files next to the dll file for room jumping tool to properly work. This file is provided with any of the releases. You can also generate it yourself using the python script provided in the "scripts" folder. However you will need to set up a few things before being able to run it like extracting the xfs filles of all the rooms. A better tool might get added in the future.
+Upon first use, closing the game generates `bhdtool.ini`. To temporarily disable the hook without deleting `dinput8.dll`, set `EnableBhdTool=0` inside `bhdtool.ini`.
 
-Upon first use, the tool will generate a bhdtool.ini file when the game is closed, containing the tool's settings. If you wish to completely disable the tool without having to remove the dinput8.dll, simply set the "EnableBhdTool" field to 0 within it.
+> Note: Keep `rooms.json` next to `dinput8.dll`. Both **Room Jump**, **Bidirectional Door Randomizer**, and **Recent Room Spawns** room-name lookup rely on it.
 
-## Contributing
-If you wish to request or add more features to the project (or fix bugs), do not hesitate to open issues and/or pull requests and I'll look at them when I can.
+## How to Build
+Built with **Visual Studio** (`v143` toolset, `Win32` / `x86`, `Release`). Visual Studio 2019 or newer with C++ x86 build tools is supported.
 
-## List of planned features
-- Various informations about the game (like character coords, enemies, etc...)
-- Controller support
-- Flag editor (Save/Kill Barry, Mansion Part 1 & 2, etc...)
-- And more...
+1. Clone recursively so `imgui` and `json11` submodules are initialized:
+   ```sh
+   git clone --recursive https://github.com/SamaelTheKingOfHell/RE1HD-DLL-Randomizer.git
+   ```
+2. Build `Release|x86` via Visual Studio or MSBuild:
+   ```bat
+   MSBuild.exe BhdTool.sln /p:Configuration=Release /p:Platform=x86
+   ```
+3. Output binary: `Release\dinput8.dll`.
 
-## Donations
-If you feel generous and want to buy me a coffee or anything, here's a link to my Ko-Fi : https://ko-fi.com/eleval777
+## Credits & Attribution
+- **Eleval** — Creator of [eleval/BhdTool](https://github.com/eleval/BhdTool) ([Ko-Fi](https://ko-fi.com/eleval777)).
+- **Benn Powell** — Randomizer option set inspiration (character/difficulty pool controls, junk replacements, Self-Defense Gun & Fuel Capsule modifiers).
+- **Third-Party Dependencies**: [Dear ImGui](https://github.com/ocornut/imgui), [json11](https://github.com/dropbox/json11), and `picosha2`.
 
 ## License
-This project is distributed under the GNU General Public License v3.0 (GNU GPLv3).
+Distributed under the **GNU General Public License v3.0 (GNU GPLv3)**. See [LICENSE.txt](LICENSE.txt) for full terms.
